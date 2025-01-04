@@ -49,6 +49,9 @@ class VerseProseMajorityClassifier:
         
         chunks = []
         start = 0
+
+        if len(cleaned_text) <= 128:
+            return [cleaned_text]
         
         while start < len(cleaned_text):
             end = start + chunk_size
@@ -109,7 +112,7 @@ class VerseProseMajorityClassifier:
     def predict(self, text: str) -> Dict:
         chunks = self.split_text(text)
         for chunk in chunks:
-            print(len(chunk))
+            print("chunk", chunk)
         chunk_predictions = [self.predict_chunk(chunk) for chunk in chunks]
         results = self.majority_vote(chunk_predictions)
         return results
@@ -229,16 +232,15 @@ class VerseProsePredictorGUI:
         self.root.grid_columnconfigure(0, weight=1)
         
         try:
-            model_path = 'new_model_siku/verse_prose_model'
+            model_path = 'model_siku_fold_1/verse_prose_model'
             if not os.path.exists(model_path):
                 raise FileNotFoundError(
-                    "Model not found! Please ensure you have trained the model first "
-                    "and the files are saved in the 'new_mode_siku/verse_prose_model' directory."
+                    "Model not found! Please ensure you have trained the model."
                 )
             
             self.classifier = VerseProseMajorityClassifier(
                 model_path=model_path,
-                max_length=128,
+                max_length=50,
                 overlap_percent=0.2,
                 min_chunk_size=50
             )
@@ -301,12 +303,14 @@ class VerseProsePredictorGUI:
         
         # Chunk size and overlap controls
         ttk.Label(settings_frame, text="Chunk Size:").grid(row=0, column=0, padx=5)
-        self.chunk_size_var = tk.StringVar(value="128")
+        self.chunk_size_var = tk.StringVar(value="50")
+        chunk_size_entry = ttk.Entry(settings_frame, textvariable=self.chunk_size_var, width=10, state='readonly')
         chunk_size_entry = ttk.Entry(settings_frame, textvariable=self.chunk_size_var, width=10)
         chunk_size_entry.grid(row=0, column=1, padx=5)
         
         ttk.Label(settings_frame, text="Overlap %:").grid(row=0, column=2, padx=5)
         self.overlap_var = tk.StringVar(value="20")
+        overlap_entry = ttk.Entry(settings_frame, textvariable=self.chunk_size_var, width=10, state='readonly')
         overlap_entry = ttk.Entry(settings_frame, textvariable=self.overlap_var, width=10)
         overlap_entry.grid(row=0, column=3, padx=5)
         

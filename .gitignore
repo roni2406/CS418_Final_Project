@@ -1,8 +1,8 @@
-model_bert
-model_save
-model_save_0
-model_sikubert
-new_model_guwen
-new_model_siku
+model_guwen
+model_guwen_val
+model_guwen_kfold
+model_siku
+model_siku_val
+model_siku_kfold
 .vscode
 checkpoints

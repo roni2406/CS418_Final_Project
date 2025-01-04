@@ -30,7 +30,7 @@ def process_dataset(split):
     
     verse_file = f'datasets/verse/expanded_data_{split}.json'
     prose_file = f'datasets/prose/DVSKTT_data_prose_{split}.json'
-    output_file = f'datasets/dataset_{split}.json'
+    output_file = f'datasets/val_dataset_{split}.json'
     verse_file_2 = f'datasets/verse/kieu_{split}.json'
     prose_file_2 = f'datasets/prose/thuyhu_data_prose_{split}.json'
     verse_file_3 = f'datasets/verse/thivien_{split}.json'
@@ -75,5 +75,5 @@ def process_dataset(split):
     process_json(output_file, output_file)
 
 
-for split in ['train', 'test']:
+for split in ['train', 'test', 'val']:
     process_dataset(split)

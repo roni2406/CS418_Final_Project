@@ -2,11 +2,11 @@ import json
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 # Load the answers.json
-with open('datasets/new_dataset_test.json', 'r', encoding='utf-8') as f:
+with open('datasets/dataset_test.json', 'r', encoding='utf-8') as f:
     answers = json.load(f)
 
 # Load the results.json
-with open('statistics/new_results_siku.json', 'r', encoding='utf-8') as f:
+with open('statistics/results_siku_fold_1.json', 'r', encoding='utf-8') as f:
     results = json.load(f)
 
 # Extract true and predicted labels

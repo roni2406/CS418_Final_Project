@@ -1,5 +1,4 @@
 import json
-import os
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, precision_score, recall_score
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
@@ -13,7 +12,7 @@ def load_data(file_path):
         return json.load(f)
 
 class VerseProseDataset(Dataset):
-    def __init__(self, data, tokenizer, max_length=512):
+    def __init__(self, data, tokenizer, max_length=128):
         # Separate texts and labels during initialization
         texts = [item['content'] for item in data.values()]
         labels = [1 if item['label'] == 'verse' else 0 for item in data.values()]
@@ -78,26 +77,25 @@ def test_model(model, tokenizer, test_data_path, device, batch_size=16, max_leng
     label_mapping = {0: "prose", 1: "verse"}
     test_predictions = {str(idx): label_mapping.get(pred, "unknown") for idx, pred in enumerate(all_predictions)}
     
-    with open('statistics/new_results.json', 'w', encoding='utf-8') as f:
+    with open('statistics/results_siku.json', 'w', encoding='utf-8') as f:
         json.dump(test_predictions, f, ensure_ascii=False, indent=4)
 
+
 def main():
-    # Create necessary directories
-    os.makedirs('model_bert', exist_ok=True)
     
     # Check if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Load tokenizer and model
-    model_name = "ethanyt/guwenbert-base"
+    model_name = "SIKU-BERT/sikubert"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model.to(device)
 
     # Load and prepare data
-    data = load_data('datasets/new_dataset_train.json')
-    dataset = VerseProseDataset(data, tokenizer, max_length=256)
+    data = load_data('datasets/dataset_train.json')
+    dataset = VerseProseDataset(data, tokenizer, max_length=128)
 
     # Define training arguments
     training_args = TrainingArguments(
@@ -119,13 +117,13 @@ def main():
     trainer.train()
     
     # Save the final model and tokenizer
-    model.save_pretrained('new_model_guwen/verse_prose_model')
-    tokenizer.save_pretrained('new_model_guwen/verse_prose_model')
+    model.save_pretrained('model_siku/verse_prose_model')
+    tokenizer.save_pretrained('model_siku/verse_prose_model')
     
-    print("Model and tokenizer saved to 'new_model_guwen/verse_prose_model'")
+    print("Model and tokenizer saved to 'model_siku/verse_prose_model'")
     
     # Test the model
-    test_model(model, tokenizer, 'datasets/new_dataset_test.json', device=device, batch_size=16, max_length=128)
+    test_model(model, tokenizer, 'datasets/dataset_test.json', device=device, batch_size=16, max_length=128)
 
 if __name__ == "__main__":
     main()

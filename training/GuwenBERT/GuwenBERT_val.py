@@ -1,5 +1,4 @@
 import json
-import os
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, precision_score, recall_score
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
@@ -78,34 +77,56 @@ def test_model(model, tokenizer, test_data_path, device, batch_size=16, max_leng
     label_mapping = {0: "prose", 1: "verse"}
     test_predictions = {str(idx): label_mapping.get(pred, "unknown") for idx, pred in enumerate(all_predictions)}
     
-    with open('statistics/new_results_siku.json', 'w', encoding='utf-8') as f:
+    with open('statistics/results_guwen_val.json', 'w', encoding='utf-8') as f:
         json.dump(test_predictions, f, ensure_ascii=False, indent=4)
 
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    
+    precision = precision_score(labels, preds)
+    recall = recall_score(labels, preds)
+    f1 = f1_score(labels, preds)
+    
+    return {
+        'precision': precision,
+        'recall': recall,
+        'f1': f1
+    }
+
 def main():
-    # Create necessary directories
-    os.makedirs('model_bert', exist_ok=True)
     
     # Check if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Load tokenizer and model
-    model_name = "SIKU-BERT/sikubert"
+    model_name = "ethanyt/guwenbert-base"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model.to(device)
 
     # Load and prepare data
-    data = load_data('datasets/new_dataset_train.json')
+    data = load_data('datasets/val_dataset_train.json')
+    val_data = load_data('datasets/val_dataset_val.json')
     dataset = VerseProseDataset(data, tokenizer, max_length=128)
+    val_dataset = VerseProseDataset(val_data, tokenizer, max_length=128)
 
     # Define training arguments
     training_args = TrainingArguments(
         output_dir='./checkpoints',
-        num_train_epochs=3,
+        num_train_epochs=1,
         per_device_train_batch_size=16,
-        save_strategy='epoch',
-        save_total_limit=2,  # Keep only the last 2 checkpoints
+        per_device_eval_batch_size=16,
+        warmup_ratio=0.1,
+        weight_decay=0.01,
+        eval_strategy="epoch", 
+        save_strategy="epoch",
+        save_total_limit=2,
+        load_best_model_at_end=True,  
+        metric_for_best_model="f1",  
+        greater_is_better=True,       
+        report_to="none"   
     )
 
     # Initialize Trainer
@@ -113,19 +134,29 @@ def main():
         model=model,
         args=training_args,
         train_dataset=dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=compute_metrics
     )
 
     # Train the model
     trainer.train()
+
+    eval_results = trainer.evaluate()
+    print(eval_results)
     
     # Save the final model and tokenizer
-    model.save_pretrained('new_model_siku/verse_prose_model')
-    tokenizer.save_pretrained('new_model_siku/verse_prose_model')
+    model.save_pretrained('model_guwen_val/verse_prose_model')
+    tokenizer.save_pretrained('model_guwen_val/verse_prose_model')
+
+    # # Load the saved model and tokenizer, use for inference results if don't want to train
+    # model = AutoModelForSequenceClassification.from_pretrained('model_guwen_val/verse_prose_model')
+    # tokenizer = AutoTokenizer.from_pretrained('model_guwen_val/verse_prose_model')
+    # model.to(device)
     
-    print("Model and tokenizer saved to 'new_model_siku/verse_prose_model'")
+    print("Model and tokenizer saved to 'model_guwen_val/verse_prose_model'")
     
     # Test the model
-    test_model(model, tokenizer, 'datasets/new_dataset_test.json', device=device, batch_size=16, max_length=128)
+    test_model(model, tokenizer, 'datasets/val_dataset_test.json', device=device, batch_size=16, max_length=128)
 
 if __name__ == "__main__":
     main()
