@@ -70,3 +70,6 @@ The result on the test set will be written to the console as format below:
 python inference_GUI.py
 ```
 3. Input your text and see the result.
+
+### Documentation
+- See the file `Report.pdf` to know about the result.
